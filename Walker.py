@@ -45,40 +45,79 @@ class Walker:
 		self.previous_state = None
 		self.previous_action = None
 		self.actions = [
-			self.knee_open_left,
-			self.knee_open_right,
-			self.knee_close_left,
-			self.knee_close_right,
-			self.hip_forward_left,
-			self.hip_forward_right,
-			self.hip_back_left,
-			self.hip_back_right,
+			lambda: self.knee_open('left'),
+			lambda: self.knee_open('right'),
+			lambda: self.knee_close('left'),
+			lambda: self.knee_close('right'),
+			lambda: self.hip_forward('left'),
+			lambda: self.hip_forward('right'),
+			lambda: self.hip_back('left'),
+			lambda: self.hip_back('right'),
 			self.do_nothing
 		]
 		self.alpha = 0.3  # 0 < alpha < 1
-		self.reward[]
+		self.reward = {}
+		self.visited = {}
 
+
+	# TODO fix these 4 functions up
+
+	def knee_close(self, side):
+		pass
+
+
+	def knee_open(self, side):
+		pass
+
+
+	def hip_forward(self, side):
+		pass
+
+
+	def hip_back(self, side):
+		pass
+
+
+	def do_nothing(self):
+		pass
+
+	# TODO check that the rewards propogate
 
 	def update_reward(self):
 		pstate = self.previous_state
 		paction = self.previous_action
 		state = self.get_state()
+		print(pstate, state)
+		if pstate is None:
+			self.previous_state = state
+			return
 		if pstate not in self.reward:
 			self.reward[pstate] = [0] * len(self.actions)
-		self.reward[pstate][paction] =
-			(1 - alpha) * self.reward[pstate][paction] +
-			alpha * max(self.reward[state])
+			self.visited[pstate] = 0
+		self.reward[pstate][paction] = \
+			(1 - self.alpha) * self.reward[pstate][paction] + \
+			self.alpha * max(self.reward[state])
+		self.visited[pstate] += 1
 		self.previous_state = state
+
+
+	def reward(self, amount):
+		if pstate not in self.reward:
+			self.reward[pstate] = [0] * len(self.actions)
+		self.reward[pstate][paction] = \
+			(1 - self.alpha) * self.reward[pstate][paction] + \
+			self.alpha * amount
 
 
 	def perform_action(self):
 		state = self.get_state()
 		if state not in self.reward:
 			# choose random
-			action = random.randint(len(self.actions))
+			action = random.randrange(0, len(self.actions))
 			self.previous_action = action
 			self.actions[action]()
-		elif max(self.reward[state]) / sum(self.reward[state]) > 0.9:
+		elif self.visited[state] > 1000 and \
+			max(self.reward[state]) / sum(self.reward[state]) > 0.9:
 			# use maximum
 			action = 0
 			max_r = self.reward[state][0]
@@ -90,17 +129,17 @@ class Walker:
 			self.actions[action]()
 		else:
 			# choose random
-			action = random.randint(len(self.actions))
+			action = random.randrange(0, len(self.actions))
 			self.previous_action = action
 			self.actions[action]()
 
 
 	def get_state(self):
-		return [self.torso_rotation,
+		return (self.torso_rotation,
 				self.left['upper'],
 				self.left['lower'],
 				self.right['upper'],
-				self.right['lower']]
+				self.right['lower'])
 
 
 	def get_torso_info(self):
@@ -150,13 +189,11 @@ class Walker:
 			torso_lower, self.upper_limb_len, angle_right_upper)
 		
 		ret.append([torso_lower, left_knee])
-
 		ret.append([left_knee, self.get_lower_point(
 			left_knee, self.lower_limb_len,
 			angle_left_upper - self.left['lower'])])
 		
 		ret.append([torso_lower, right_knee])
-		
 		ret.append([right_knee, self.get_lower_point(
 			right_knee, self.lower_limb_len,
 			angle_right_upper - self.right['lower'])])
