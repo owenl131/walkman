@@ -29,7 +29,7 @@ class Visualization:
 
 
 	def update_physics(self):
-		pass
+		self.world.apply_gravity()
 
 
 
@@ -70,7 +70,6 @@ class Visualization:
 			fill='green',
 			width=4
 			)
-
 		for i in range(4):
 			l = legs[i]
 			self.canvas.create_line(

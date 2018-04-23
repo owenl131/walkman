@@ -1,4 +1,5 @@
 import math
+import random
 
 class Walker:
 
@@ -24,9 +25,9 @@ class Walker:
 	def __init__(self):
 		self.reset()
 
+
 	def reset(self):
-		self.torso_angle = 0
-		self.torso_coordinates = (50, 140)
+		self.torso_coordinates = [50, 140]
 		# torso rotation of 0 is upright
 		# + is leaning forward, - is leaning backwards
 		# in other words, angle is angle from the normal
@@ -40,6 +41,67 @@ class Walker:
 		# due to the nature of the knee
 		self.left = { 'upper': 10, 'lower': -20 }
 		self.right = { 'upper': 5, 'lower': -10 }
+		# policies
+		self.previous_state = None
+		self.previous_action = None
+		self.actions = [
+			self.knee_open_left,
+			self.knee_open_right,
+			self.knee_close_left,
+			self.knee_close_right,
+			self.hip_forward_left,
+			self.hip_forward_right,
+			self.hip_back_left,
+			self.hip_back_right,
+			self.do_nothing
+		]
+		self.alpha = 0.3  # 0 < alpha < 1
+		self.reward[]
+
+
+	def update_reward(self):
+		pstate = self.previous_state
+		paction = self.previous_action
+		state = self.get_state()
+		if pstate not in self.reward:
+			self.reward[pstate] = [0] * len(self.actions)
+		self.reward[pstate][paction] =
+			(1 - alpha) * self.reward[pstate][paction] +
+			alpha * max(self.reward[state])
+		self.previous_state = state
+
+
+	def perform_action(self):
+		state = self.get_state()
+		if state not in self.reward:
+			# choose random
+			action = random.randint(len(self.actions))
+			self.previous_action = action
+			self.actions[action]()
+		elif max(self.reward[state]) / sum(self.reward[state]) > 0.9:
+			# use maximum
+			action = 0
+			max_r = self.reward[state][0]
+			for i in range(len(self.actions)):
+				if self.reward[state][i] > max_r:
+					max_r = self.reward[state][i]
+					action = i
+			self.previous_action = action
+			self.actions[action]()
+		else:
+			# choose random
+			action = random.randint(len(self.actions))
+			self.previous_action = action
+			self.actions[action]()
+
+
+	def get_state(self):
+		return [self.torso_rotation,
+				self.left['upper'],
+				self.left['lower'],
+				self.right['upper'],
+				self.right['lower']]
+
 
 	def get_torso_info(self):
 		"""
