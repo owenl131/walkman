@@ -43,8 +43,16 @@ class Walker:
 		# and - for backwards
 		# note that lower angles are nonpositive,
 		# due to the nature of the knee
-		self.left = { 'upper': 10, 'lower': -20 }
-		self.right = { 'upper': 5, 'lower': -10 }
+		self.joints = {
+			'left': {
+				'upper': 10,
+				'lower': -20
+			},
+			'right': {
+				'upper': 5,
+				'lower': -10
+			}
+		}
 		# policies
 		self.previous_state = None
 		self.previous_action = None
@@ -67,23 +75,98 @@ class Walker:
 	# TODO fix these 4 functions up
 
 	def knee_close(self, side):
-		pass
+		anchor_foot = self.get_anchor_foot()
+		if anchor_foot == 'both' or side == anchor_foot:
+			# fix leg and move body
+			torso_lower = self.get_torso_bottom()
+			knee = self.get_lower_point(torso_lower,
+				self.upper_limb_len,
+				self.torso_rotation - self.joints[side]['upper'])
+			# fix knee
+			torso_vector = (self.torso_coordinates[0] - knee[0],
+							self.torso_coordinates[1] - knee[1])
+			rotate_by_angle = 1
+			rotated = self.rotate_point_about_origin(torso_vector, math.radians(rotate_by_angle))
+			self.torso_coordinates = [rotated[0] + knee[0], rotated[1] + knee[1]]
+			self.torso_rotation -= rotate_by_angle
+		
+		self.joints[side]['lower'] = max(self.joints[side]['lower']-1, -135)
+		self.fix_sinking()
 
 
 	def knee_open(self, side):
-		pass
+		anchor_foot = self.get_anchor_foot()
+		if anchor_foot == 'both' or side == anchor_foot:
+			# fix leg and move body
+			torso_lower = self.get_torso_bottom()
+			knee = self.get_lower_point(torso_lower,
+				self.upper_limb_len,
+				self.torso_rotation - self.joints[side]['upper'])
+			# fix knee
+			torso_vector = (self.torso_coordinates[0] - knee[0],
+							self.torso_coordinates[1] - knee[1])
+			rotate_by_angle = -1
+			rotated = self.rotate_point_about_origin(torso_vector, math.radians(rotate_by_angle))
+			self.torso_coordinates = [rotated[0] + knee[0], rotated[1] + knee[1]]
+			self.torso_rotation -= rotate_by_angle
+		
+		self.joints[side]['lower'] = min(self.joints[side]['lower']+1, 0)
+		self.fix_sinking()
 
 
 	def hip_forward(self, side):
-		pass
+		anchor_foot = self.get_anchor_foot()
+		if anchor_foot == 'both' or side == anchor_foot:
+			torso_lower = self.get_torso_bottom()
+			# fix hip
+			torso_vector = (self.torso_coordinates[0] - torso_lower[0],
+							self.torso_coordinates[1] - torso_lower[1])
+			rotate_by_angle = -1
+			rotated = self.rotate_point_about_origin(torso_vector, math.radians(rotate_by_angle))
+			self.torso_coordinates = [rotated[0] + torso_lower[0], rotated[1] + torso_lower[1]]
+			self.torso_rotation -= rotate_by_angle
+		
+		self.joints[side]['upper'] = min(self.joints[side]['upper']+1, 90)
+		self.fix_sinking()
 
 
 	def hip_back(self, side):
-		pass
+		anchor_foot = self.get_anchor_foot()
+		if self.joints[side]['upper'] == -90:
+			return
+		if anchor_foot == 'both' or side == anchor_foot:
+			torso_lower = self.get_torso_bottom()
+			# fix torso
+			torso_vector = (self.torso_coordinates[0] - torso_lower[0],
+							self.torso_coordinates[1] - torso_lower[1])
+			rotate_by_angle = 1
+			rotated = self.rotate_point_about_origin(torso_vector, math.radians(rotate_by_angle))
+			self.torso_coordinates = [rotated[0] + torso_lower[0], rotated[1] + torso_lower[1]]
+			self.torso_rotation -= rotate_by_angle
+		
+		self.joints[side]['upper'] = max(self.joints[side]['upper']-1, -90)
+		self.fix_sinking()
 
+
+	def fix_sinking(self):
+		# after movement, if other leg comes down and touches the ground,
+		# ensure that that leg does not sink below the ground
+		# raise the whole body if necessary
+		foot_points = self.get_foot_points()
+		self.torso_coordinates = [self.torso_coordinates[0],
+			self.torso_coordinates[1] - min(foot_points[0][1], foot_points[1][1])]
 
 	def do_nothing(self):
-		pass
+		print('Doing nothing!!!')
+
+
+	def rotate_point_about_origin(self, vector, radians):
+		# rotates point clockwise about origin
+		return (
+			math.cos(radians)*vector[0] - math.sin(radians)*vector[1],
+			math.sin(radians)*vector[0] + math.cos(radians)*vector[1]
+			)	
+
 
 	# TODO check that the rewards propogate
 
@@ -108,7 +191,9 @@ class Walker:
 		self.previous_state = state
 
 
-	def reward(self, amount):
+	def give_reward(self, amount):
+		pstate = self.previous_state
+		paction = self.previous_action
 		if pstate not in self.reward:
 			self.reward[pstate] = [0] * len(self.actions)
 		self.reward[pstate][paction] = \
@@ -143,10 +228,10 @@ class Walker:
 
 	def get_state(self):
 		return (self.torso_rotation,
-				self.left['upper'],
-				self.left['lower'],
-				self.right['upper'],
-				self.right['lower'])
+				self.joints['left']['upper'],
+				self.joints['left']['lower'],
+				self.joints['right']['upper'],
+				self.joints['right']['lower'])
 
 
 	def get_torso_info(self):
@@ -187,8 +272,8 @@ class Walker:
 		ret = []
 		
 		torso_lower = self.get_torso_bottom()
-		angle_left_upper = self.torso_rotation - self.left['upper']
-		angle_right_upper = self.torso_rotation - self.right['upper']
+		angle_left_upper = self.torso_rotation - self.joints['left']['upper']
+		angle_right_upper = self.torso_rotation - self.joints['right']['upper']
 		
 		left_knee = self.get_lower_point(
 			torso_lower, self.upper_limb_len, angle_left_upper)
@@ -198,12 +283,12 @@ class Walker:
 		ret.append([torso_lower, left_knee])
 		ret.append([left_knee, self.get_lower_point(
 			left_knee, self.lower_limb_len,
-			angle_left_upper - self.left['lower'])])
+			angle_left_upper - self.joints['left']['lower'])])
 		
 		ret.append([torso_lower, right_knee])
 		ret.append([right_knee, self.get_lower_point(
 			right_knee, self.lower_limb_len,
-			angle_right_upper - self.right['lower'])])
+			angle_right_upper - self.joints['right']['lower'])])
 		# this function returns redundant information
 		# since the knee point is duplicated
 		return ret
@@ -216,6 +301,20 @@ class Walker:
 		# assumes that the first coordinate given is the knee
 		# and the second coordinate given is the foot
 		return (impt_limbs[0][1], impt_limbs[1][1])
+
+
+	def get_anchor_foot(self):
+		foot_points = self.get_foot_points()
+		print(foot_points)
+		# establish base
+		if foot_points[0][1] < 1 and foot_points[1][1] < 1:
+			return 'both'
+		elif foot_points[0][1] < 1:
+			return 'left'
+		elif foot_points[1][1] < 1:
+			return 'right'
+		else:
+			assert(False)
 
 
 	def get_cg(self):

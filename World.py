@@ -11,10 +11,12 @@ class World:
 
 	def __init__(self):
 		self.walker = Walker()
+		self.apply_gravity()
 
 
 	def reset(self):
 		self.walker.reset()
+		self.apply_gravity()
 
 
 	def apply_gravity(self):
@@ -80,10 +82,11 @@ class World:
 		body_vector = (
 			self.walker.torso_coordinates[0] - about_pt[0],
 			self.walker.torso_coordinates[1] - about_pt[1])
-		rads = math.radians(angle)
+		rads = -math.radians(angle)
 		rotated = (
 			math.cos(rads)*body_vector[0] - math.sin(rads)*body_vector[1],
 			math.sin(rads)*body_vector[0] + math.cos(rads)*body_vector[1])
+		print(body_vector, rotated)
 		self.walker.torso_rotation += angle
 		self.walker.torso_coordinates = [
 			rotated[0] + about_pt[0],

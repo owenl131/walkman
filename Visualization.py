@@ -25,7 +25,7 @@ class Visualization:
 
 
 	def give_big_reward(self, amount):
-		self.world.walker.reward(amount)
+		self.world.walker.give_reward(amount)
 
 
 	def update_walker_before(self):
