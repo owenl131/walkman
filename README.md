@@ -1,6 +1,7 @@
 # Walkman
 
 In progress...
+
 v1.0 complete.
 
 ### Setup
@@ -16,3 +17,7 @@ $ python3 Test.py
 - Make walker learn
 - Fix RL logic
 - Add an ankle
+
+### Plan for v2.0
+
+Attempt with no gravity, but with ankles.
