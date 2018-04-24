@@ -11,6 +11,7 @@ class Visualization:
 		self.world_height = 200
 		self.world_width = 400
 		self.counter = 0
+		self.iteration_counter = 0
 		# GUI
 		self.window = tkinter.Tk()
 		self.canvas = tkinter.Canvas(
@@ -44,14 +45,20 @@ class Visualization:
 	def loop(self):
 		while True:
 			# if walker passes the checkpoint
-			if self.world.walker.torso_coordinates[0] > self.world_width - 50:
-				self.give_big_reward(1000.0/self.counter)
-				self.reset()
+			#if self.world.walker.torso_coordinates[0] > self.world_width - 50:
+			#	self.give_big_reward(1000.0/self.counter)
+			#	self.reset()
 			# if walker falls down
-			elif self.world.walker.torso_coordinates[1] < 20:
-				self.give_big_reward(-1)
+			if self.world.walker.torso_coordinates[1] < 20:
+				print('Fail')
+				self.give_big_reward(-1000)
 				self.reset()
-			print('Iteration: ' + str(self.counter))
+			if self.counter == 100:
+				reward = self.world.walker.torso_coordinates[0] - 100
+				print('Finished Iterations: ' + str(reward))
+				self.give_big_reward(reward)
+				self.reset()
+			#print('Iteration: ' + str(self.counter))
 			self.counter += 1
 			self.update_walker_before()
 			self.update_physics()
@@ -59,11 +66,13 @@ class Visualization:
 			self.render()
 			self.window.update_idletasks()
 			self.window.update()
-			time.sleep(0.2)
+			if self.iteration_counter > 1000:
+				time.sleep(0.1)
 
 
 	def reset(self):
 		self.counter = 0
+		self.iteration_counter += 1
 		self.world.reset()
 
 

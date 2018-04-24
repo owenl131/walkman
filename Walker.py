@@ -27,7 +27,7 @@ class Walker:
 
 
 	def reset(self):
-		self.torso_coordinates = [50, 140]
+		self.torso_coordinates = [100, 140]
 		# torso rotation of 0 is upright
 		# + is leaning forward, - is leaning backwards
 		# in other words, angle is angle from the normal
@@ -43,13 +43,14 @@ class Walker:
 		# and - for backwards
 		# note that lower angles are nonpositive,
 		# due to the nature of the knee
+		self.delta_angle = 5
 		self.joints = {
 			'left': {
 				'upper': 10,
 				'lower': -20
 			},
 			'right': {
-				'upper': 5,
+				'upper': 20,
 				'lower': -10
 			}
 		}
@@ -67,6 +68,9 @@ class Walker:
 			lambda: self.hip_back('right'),
 			self.do_nothing
 		]
+		#self.actions = [
+		#	lambda: self.knee_close('right')
+		#]
 		self.alpha = 0.3  # 0 < alpha < 1
 		self.reward = {}
 		self.visited = {}
@@ -75,6 +79,8 @@ class Walker:
 	# TODO fix these 4 functions up
 
 	def knee_close(self, side):
+		if self.joints[side]['lower'] - self.delta_angle < -135:
+			return
 		anchor_foot = self.get_anchor_foot()
 		if anchor_foot == 'both' or side == anchor_foot:
 			# fix leg and move body
@@ -85,16 +91,20 @@ class Walker:
 			# fix knee
 			torso_vector = (self.torso_coordinates[0] - knee[0],
 							self.torso_coordinates[1] - knee[1])
-			rotate_by_angle = 1
+			rotate_by_angle = self.delta_angle
 			rotated = self.rotate_point_about_origin(torso_vector, math.radians(rotate_by_angle))
 			self.torso_coordinates = [rotated[0] + knee[0], rotated[1] + knee[1]]
 			self.torso_rotation -= rotate_by_angle
 		
-		self.joints[side]['lower'] = max(self.joints[side]['lower']-1, -135)
+		self.joints[side]['lower'] = max(
+			self.joints[side]['lower'] - self.delta_angle,
+			-135)
 		self.fix_sinking()
 
 
 	def knee_open(self, side):
+		if self.joints[side]['lower'] + self.delta_angle > 0:
+			return
 		anchor_foot = self.get_anchor_foot()
 		if anchor_foot == 'both' or side == anchor_foot:
 			# fix leg and move body
@@ -105,46 +115,54 @@ class Walker:
 			# fix knee
 			torso_vector = (self.torso_coordinates[0] - knee[0],
 							self.torso_coordinates[1] - knee[1])
-			rotate_by_angle = -1
+			rotate_by_angle = -self.delta_angle
 			rotated = self.rotate_point_about_origin(torso_vector, math.radians(rotate_by_angle))
 			self.torso_coordinates = [rotated[0] + knee[0], rotated[1] + knee[1]]
 			self.torso_rotation -= rotate_by_angle
 		
-		self.joints[side]['lower'] = min(self.joints[side]['lower']+1, 0)
+		self.joints[side]['lower'] = min(
+			self.joints[side]['lower'] + self.delta_angle,
+			0)
 		self.fix_sinking()
 
 
 	def hip_forward(self, side):
+		if self.joints[side]['upper'] + self.delta_angle > 90:
+			return
 		anchor_foot = self.get_anchor_foot()
 		if anchor_foot == 'both' or side == anchor_foot:
 			torso_lower = self.get_torso_bottom()
 			# fix hip
 			torso_vector = (self.torso_coordinates[0] - torso_lower[0],
 							self.torso_coordinates[1] - torso_lower[1])
-			rotate_by_angle = -1
+			rotate_by_angle = -self.delta_angle
 			rotated = self.rotate_point_about_origin(torso_vector, math.radians(rotate_by_angle))
 			self.torso_coordinates = [rotated[0] + torso_lower[0], rotated[1] + torso_lower[1]]
 			self.torso_rotation -= rotate_by_angle
 		
-		self.joints[side]['upper'] = min(self.joints[side]['upper']+1, 90)
+		self.joints[side]['upper'] = min(
+			self.joints[side]['upper'] + self.delta_angle,
+			90)
 		self.fix_sinking()
 
 
 	def hip_back(self, side):
 		anchor_foot = self.get_anchor_foot()
-		if self.joints[side]['upper'] == -90:
+		if self.joints[side]['upper'] - self.delta_angle < -90:
 			return
 		if anchor_foot == 'both' or side == anchor_foot:
 			torso_lower = self.get_torso_bottom()
 			# fix torso
 			torso_vector = (self.torso_coordinates[0] - torso_lower[0],
 							self.torso_coordinates[1] - torso_lower[1])
-			rotate_by_angle = 1
+			rotate_by_angle = self.delta_angle
 			rotated = self.rotate_point_about_origin(torso_vector, math.radians(rotate_by_angle))
 			self.torso_coordinates = [rotated[0] + torso_lower[0], rotated[1] + torso_lower[1]]
 			self.torso_rotation -= rotate_by_angle
 		
-		self.joints[side]['upper'] = max(self.joints[side]['upper']-1, -90)
+		self.joints[side]['upper'] = max(
+			self.joints[side]['upper'] - self.delta_angle,
+			-90)
 		self.fix_sinking()
 
 
@@ -156,8 +174,9 @@ class Walker:
 		self.torso_coordinates = [self.torso_coordinates[0],
 			self.torso_coordinates[1] - min(foot_points[0][1], foot_points[1][1])]
 
+
 	def do_nothing(self):
-		print('Doing nothing!!!')
+		pass
 
 
 	def rotate_point_about_origin(self, vector, radians):
@@ -174,7 +193,6 @@ class Walker:
 		pstate = self.previous_state
 		paction = self.previous_action
 		state = self.get_state()
-		print(pstate, state)
 		if pstate is None:
 			self.previous_state = state
 			return
@@ -305,7 +323,6 @@ class Walker:
 
 	def get_anchor_foot(self):
 		foot_points = self.get_foot_points()
-		print(foot_points)
 		# establish base
 		if foot_points[0][1] < 1 and foot_points[1][1] < 1:
 			return 'both'

@@ -23,15 +23,9 @@ class World:
 		# applies gravity instantaneously,
 		# that is to say, the walker drops till
 		# one of his arms/legs touches the ground
-		min_y = 1000
-		# get minimum y
-		for pt in self.walker.get_limb_info():
-			min_y = min(min_y, pt[0][1])
-			min_y = min(min_y, pt[1][1])
-		min_y = min(min_y, self.walker.get_torso_info()[0][1])
-		min_y = min(min_y, self.walker.get_torso_info()[1][1])
+		foot_points = self.walker.get_foot_points()
 		# lower body
-		self.walker.torso_coordinates[1] -= min_y
+		self.walker.torso_coordinates[1] -= min(foot_points[0][1], foot_points[1][1])
 
 
 	def apply_rotation(self):
@@ -41,7 +35,6 @@ class World:
 		base_left_bound = None
 		base_right_bound = None
 		legs_down = None
-		print(foot_points)
 		# establish base
 		if foot_points[0][1] < 1 and foot_points[1][1] < 1:
 			base_left_bound = min(foot_points[0][0], foot_points[1][0])
@@ -64,15 +57,15 @@ class World:
 		if centre_of_gravity[0] <= base_right_bound and \
 			centre_of_gravity[0] >= base_left_bound:
 			# no moment due to gravity
-			print('Stable')
+			#print('Stable')
 			return
 		elif centre_of_gravity[0] > base_right_bound:
 			# rotate to the right
-			print('Rotate to right')
+			#print('Rotate to right')
 			self.rotate_walker((base_right_bound, 0), 1)
 		elif centre_of_gravity[0] < base_left_bound:
 			# rotate to the left
-			print('Rotate to left')
+			#print('Rotate to left')
 			self.rotate_walker((base_left_bound, 0), -1)
 		else:
 			assert(False) 
@@ -86,7 +79,7 @@ class World:
 		rotated = (
 			math.cos(rads)*body_vector[0] - math.sin(rads)*body_vector[1],
 			math.sin(rads)*body_vector[0] + math.cos(rads)*body_vector[1])
-		print(body_vector, rotated)
+		#print(body_vector, rotated)
 		self.walker.torso_rotation += angle
 		self.walker.torso_coordinates = [
 			rotated[0] + about_pt[0],
