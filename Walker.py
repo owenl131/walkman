@@ -35,6 +35,10 @@ class Walker:
 		self.torso_height = 50
 		self.upper_limb_len = 40
 		self.lower_limb_len = 40
+		# used for computing Centre of Gravity
+		self.torso_mass = 100
+		self.upper_limb_mass = 50
+		self.lower_limb_mass = 30
 		# angles are + for forward relative to torso
 		# and - for backwards
 		# note that lower angles are nonpositive,
@@ -91,6 +95,9 @@ class Walker:
 		if pstate is None:
 			self.previous_state = state
 			return
+		if state not in self.reward:
+			self.reward[state] = [0] * len(self.actions)
+			self.visited[state] = 0
 		if pstate not in self.reward:
 			self.reward[pstate] = [0] * len(self.actions)
 			self.visited[pstate] = 0
@@ -197,9 +204,39 @@ class Walker:
 		ret.append([right_knee, self.get_lower_point(
 			right_knee, self.lower_limb_len,
 			angle_right_upper - self.right['lower'])])
-
+		# this function returns redundant information
+		# since the knee point is duplicated
 		return ret
 
 
+	def get_foot_points(self):
+		limbs = self.get_limb_info()
+		impt_limbs = [limbs[1], limbs[3]]
+		# assumes details about implementation of get_limb_info
+		# assumes that the first coordinate given is the knee
+		# and the second coordinate given is the foot
+		return (impt_limbs[0][1], impt_limbs[1][1])
 
 
+	def get_cg(self):
+		points = []
+		points.append((self.torso_coordinates[0],
+			self.torso_coordinates[1], self.torso_mass))
+		limbs = self.get_limb_info()
+		# left lower
+		masses = [self.lower_limb_mass, self.upper_limb_mass,
+				  self.lower_limb_mass, self.upper_limb_mass]
+		for i in range(4):
+			points.append((
+				(limbs[i][0][0]+limbs[i][1][0])/2,
+				(limbs[i][0][1]+limbs[i][1][1])/2,
+				masses[i]))
+		total_mass = 0
+		x, y = 0, 0
+		for pt in points:
+			total_mass += pt[2]
+			x += pt[0] * pt[2]
+			y += pt[1] * pt[2]
+		x /= total_mass
+		y /= total_mass
+		return x, y

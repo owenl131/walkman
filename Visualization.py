@@ -25,27 +25,33 @@ class Visualization:
 
 
 	def give_big_reward(self, amount):
-		self.world.get_walker().reward(amount)
+		self.world.walker.reward(amount)
 
 
 	def update_walker_before(self):
-		self.world.get_walker().perform_action()
+		self.world.walker.perform_action()
 
 
 	def update_walker_after(self):
-		self.world.get_walker().update_reward()
+		self.world.walker.update_reward()
 
 
 	def update_physics(self):
 		self.world.apply_gravity()
+		self.world.apply_rotation()
 
 
 	def loop(self):
 		while True:
-			if self.world.get_walker().torso_coordinates[0] > self.world_width - 50:
+			# if walker passes the checkpoint
+			if self.world.walker.torso_coordinates[0] > self.world_width - 50:
 				self.give_big_reward(1000.0/self.counter)
 				self.reset()
-			print('Hello ' + str(self.counter))
+			# if walker falls down
+			elif self.world.walker.torso_coordinates[1] < 20:
+				self.give_big_reward(-1)
+				self.reset()
+			print('Iteration: ' + str(self.counter))
 			self.counter += 1
 			self.update_walker_before()
 			self.update_physics()
@@ -68,8 +74,8 @@ class Visualization:
 
 
 	def draw_walker(self):
-		torso = self.world.get_walker().get_torso_info()
-		legs = self.world.get_walker().get_limb_info()
+		torso = self.world.walker.get_torso_info()
+		legs = self.world.walker.get_limb_info()
 		self.canvas.create_line(
 			torso[0][0], self.world_height - torso[0][1],
 			torso[1][0], self.world_height - torso[1][1],
