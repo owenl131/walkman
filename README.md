@@ -1,6 +1,7 @@
 # Walkman
 
 In progress...
+v1.0 complete.
 
 ### Setup
 
@@ -13,4 +14,5 @@ $ python3 Test.py
 
 - Make walking and physics realistic
 - Make walker learn
-
+- Fix RL logic
+- Add an ankle
